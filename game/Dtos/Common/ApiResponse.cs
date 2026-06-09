@@ -1,4 +1,4 @@
-namespace game.Dtos.Common;
+namespace BeginnerCrud.Shared.Dtos;
 
 public class ApiResponse<T>
 {

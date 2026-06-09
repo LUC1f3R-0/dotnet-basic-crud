@@ -1,4 +1,4 @@
-namespace BeginnerCrud.Api.Options;
+namespace BeginnerCrud.Infrastructure.Options;
 
 public class DatabaseOptions
 {

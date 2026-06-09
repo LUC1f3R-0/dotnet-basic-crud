@@ -1,4 +1,4 @@
-namespace BeginnerCrud.Api.Entities;
+namespace BeginnerCrud.Domain.Entities;
 
 public class Contact
 {

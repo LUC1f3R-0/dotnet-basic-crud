@@ -1,10 +1,10 @@
 using BeginnerCrud.Api.Data;
-using BeginnerCrud.Api.Options;
+using BeginnerCrud.Infrastructure.Options;
 using BeginnerCrud.Api.Services.Startup;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Npgsql;
-using BeginnerCrud.Api.Services.Contacts;
+using BeginnerCrud.Application.Services.Contacts;
 
 var builder = WebApplication.CreateBuilder(args);
 

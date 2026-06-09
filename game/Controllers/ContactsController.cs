@@ -1,11 +1,10 @@
 using BeginnerCrud.Api.Dtos;
-using BeginnerCrud.Api.Services.Contacts;
+using BeginnerCrud.Application.Services.Contacts;
 // using Microsoft.AspNetCore.Mvc;
 
 namespace BeginnerCrud.Api.Controllers;
 // ---------------------------------------------------------after added common.responce app added
-using game.Dtos;
-using game.Dtos.Common;
+using BeginnerCrud.Shared.Dtos;
 // using game.Services.Contacts;
 using Microsoft.AspNetCore.Mvc;
 

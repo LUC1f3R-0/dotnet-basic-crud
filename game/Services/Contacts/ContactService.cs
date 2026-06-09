@@ -1,9 +1,9 @@
 using BeginnerCrud.Api.Data;
 using BeginnerCrud.Api.Dtos;
-using BeginnerCrud.Api.Entities;
+using BeginnerCrud.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace BeginnerCrud.Api.Services.Contacts;
+namespace BeginnerCrud.Application.Services.Contacts;
 
 public class ContactService : IContactService
 {

@@ -1,4 +1,4 @@
-using BeginnerCrud.Api.Entities;
+using BeginnerCrud.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace BeginnerCrud.Api.Data;

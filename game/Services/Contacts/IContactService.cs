@@ -1,6 +1,6 @@
 using BeginnerCrud.Api.Dtos;
 
-namespace BeginnerCrud.Api.Services.Contacts;
+namespace BeginnerCrud.Application.Services.Contacts;
 
 public interface IContactService
 {

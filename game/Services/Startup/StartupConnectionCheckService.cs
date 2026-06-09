@@ -1,5 +1,5 @@
 using BeginnerCrud.Api.Data;
-using BeginnerCrud.Api.Options;
+using BeginnerCrud.Infrastructure.Options;
 using MailKit.Security;
 using Microsoft.Extensions.Options;
 using SmtpClient = MailKit.Net.Smtp.SmtpClient;
