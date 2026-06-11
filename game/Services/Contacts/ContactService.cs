@@ -1,58 +1,43 @@
-using BeginnerCrud.Api.Data;
 using BeginnerCrud.Api.Dtos;
+using BeginnerCrud.Application.Repositories.Contacts;
 using BeginnerCrud.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace BeginnerCrud.Application.Services.Contacts;
 
 public class ContactService : IContactService
 {
-    private readonly AppDbContext _dbContext;
+    private readonly IContactRepository _contactRepository;
 
-    public ContactService(AppDbContext dbContext)
+    public ContactService(IContactRepository contactRepository)
     {
-        _dbContext = dbContext;
+        _contactRepository = contactRepository;
     }
 
     public async Task<List<ContactResponse>> GetAllAsync()
     {
-        return await _dbContext.Contacts
-        .OrderByDescending(contact => contact.CreatedAt)
-        .Select(contact => new ContactResponse
-        {
-            Uuid = contact.Uuid,
-            Email = contact.Email,
-            Age = contact.Age,
-            CreatedAt = contact.CreatedAt,
-            UpdatedAt = contact.UpdatedAt
-        })
-        .ToListAsync();
+        var contacts = await _contactRepository.GetAllAsync();
+
+        return contacts
+            .Select(MapToResponse)
+            .ToList();
     }
 
     public async Task<ContactResponse?> GetByUuidAsync(Guid uuid)
     {
-        var contact = await _dbContext.Contacts
-            .FirstOrDefaultAsync(contact => contact.Uuid == uuid);
+        var contact = await _contactRepository.GetByUuidAsync(uuid);
 
         if (contact is null)
         {
             return null;
         }
 
-        return new ContactResponse
-        {
-            Uuid = contact.Uuid,
-            Email = contact.Email,
-            Age = contact.Age,
-            CreatedAt = contact.CreatedAt,
-            UpdatedAt = contact.UpdatedAt
-        };
+        return MapToResponse(contact);
     }
 
     public async Task<ContactResponse> CreateAsync(CreateContactRequest request)
     {
-        var emailAlreadyExists = await _dbContext.Contacts
-            .AnyAsync(contact => contact.Email == request.Email);
+        var emailAlreadyExists = await _contactRepository
+            .ExistsByEmailAsync(request.Email);
 
         if (emailAlreadyExists)
         {
@@ -67,34 +52,23 @@ public class ContactService : IContactService
             UpdatedAt = DateTime.UtcNow
         };
 
-        _dbContext.Contacts.Add(contact);
-        await _dbContext.SaveChangesAsync();
+        await _contactRepository.AddAsync(contact);
+        await _contactRepository.SaveChangesAsync();
 
-        return new ContactResponse
-        {
-            Uuid = contact.Uuid,
-            Email = contact.Email,
-            Age = contact.Age,
-            CreatedAt = contact.CreatedAt,
-            UpdatedAt = contact.UpdatedAt
-        };
+        return MapToResponse(contact);
     }
 
     public async Task<bool> UpdateAsync(Guid uuid, UpdateContactRequest request)
     {
-        var contact = await _dbContext.Contacts
-            .FirstOrDefaultAsync(contact => contact.Uuid == uuid);
+        var contact = await _contactRepository.GetByUuidAsync(uuid);
 
         if (contact is null)
         {
             return false;
         }
 
-        var emailUsedByAnotherContact = await _dbContext.Contacts
-            .AnyAsync(existingContact =>
-                existingContact.Email == request.Email &&
-                existingContact.Uuid != uuid
-            );
+        var emailUsedByAnotherContact = await _contactRepository
+            .ExistsByEmailForAnotherContactAsync(request.Email, uuid);
 
         if (emailUsedByAnotherContact)
         {
@@ -105,24 +79,35 @@ public class ContactService : IContactService
         contact.Age = request.Age;
         contact.UpdatedAt = DateTime.UtcNow;
 
-        await _dbContext.SaveChangesAsync();
+        await _contactRepository.SaveChangesAsync();
 
         return true;
     }
 
     public async Task<bool> DeleteAsync(Guid uuid)
     {
-        var contact = await _dbContext.Contacts
-            .FirstOrDefaultAsync(contact => contact.Uuid == uuid);
+        var contact = await _contactRepository.GetByUuidAsync(uuid);
 
         if (contact is null)
         {
             return false;
         }
 
-        _dbContext.Contacts.Remove(contact);
-        await _dbContext.SaveChangesAsync();
+        _contactRepository.Delete(contact);
+        await _contactRepository.SaveChangesAsync();
 
         return true;
+    }
+
+    private static ContactResponse MapToResponse(Contact contact)
+    {
+        return new ContactResponse
+        {
+            Uuid = contact.Uuid,
+            Email = contact.Email,
+            Age = contact.Age,
+            CreatedAt = contact.CreatedAt,
+            UpdatedAt = contact.UpdatedAt
+        };
     }
 }

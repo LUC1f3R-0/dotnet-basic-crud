@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using BeginnerCrud.Application.Services.Contacts;
+using BeginnerCrud.Application.Repositories.Contacts;
+using BeginnerCrud.Infrastructure.Repositories.Contacts;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +20,6 @@ builder.Services.Configure<SmtpOptions>(
     builder.Configuration.GetSection("Smtp")
 );
 
-builder.Services.AddScoped<IContactService, ContactService>();
 builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
 {
     var databaseOptions = serviceProvider
@@ -36,6 +37,9 @@ builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
 
     options.UseNpgsql(connectionStringBuilder.ConnectionString);
 });
+
+builder.Services.AddScoped<IContactRepository, ContactRepository>();
+builder.Services.AddScoped<IContactService, ContactService>();
 
 builder.Services.AddHostedService<StartupConnectionCheckService>();
 

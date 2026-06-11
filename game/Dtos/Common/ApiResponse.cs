@@ -8,7 +8,7 @@ public class ApiResponse<T>
 
     public T? Data { get; set; }
 
-    public static ApiResponse<T> Ok(string message, T data)
+    public static ApiResponse<T> Ok(string message, T? data)
     {
         return new ApiResponse<T>
         {
