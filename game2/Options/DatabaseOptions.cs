@@ -1,4 +1,4 @@
-namespace BeginnerCrud.Infrastructure.Options;
+namespace TestCrudApplication.Infrastructure.Options;
 
 public class DatabaseOptions
 {
