@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace game2.Migrations
 {
     /// <inheritdoc />
-    public partial class CreateContact : Migration
+    public partial class AddContactTable : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

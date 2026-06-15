@@ -1,9 +1,7 @@
-namespace BeginnerCrud.Domain.Entities;
+namespace TestCrudApplication.Application.Dtos.Contacts.Responses;
 
-public class Contact
+public class ContactResponse
 {
-    public int Id { get; set; }
-
     public Guid Uuid { get; set; }
 
     public string Email { get; set; } = string.Empty;
@@ -13,4 +11,4 @@ public class Contact
     public DateTime CreatedAt { get; set; }
 
     public DateTime UpdatedAt { get; set; }
-} 
+}

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace TestCrudApplication.Api.Dtos;
+namespace TestCrudApplication.Application.Dtos.Contacts.Responses;
 
 public class CreateContactRequest
 {

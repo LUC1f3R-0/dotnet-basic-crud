@@ -1,6 +1,8 @@
-using BeginnerCrud.Domain.Entities;
+using TestCrudApplication.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace TestCrudApplication.Infrastructure.Database.Configurations;
 
 public class ContactConfiguration : IEntityTypeConfiguration<Contact>
 {

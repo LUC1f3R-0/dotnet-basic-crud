@@ -1,10 +1,10 @@
 using TestCrudApplication.Infrastructure.Options;
 using MailKit.Security;
 using Microsoft.Extensions.Options;
-using TestCrudApplication.Api.Data;
+using TestCrudApplication.Infrastructure.Database;
 using SmtpClient = MailKit.Net.Smtp.SmtpClient;
 
-namespace TestCrudApplication.Api.Services.Startup;
+namespace TestCrudApplication.Api.HostedServices;
 
 public class StartupConnectionCheckService : IHostedService
 {
@@ -36,7 +36,7 @@ public class StartupConnectionCheckService : IHostedService
         {
             using var scope = _scopeFactory.CreateScope();
 
-            var dbContext = scope.ServiceProvider.GetRequiredService<AppDBContext>();
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
             var canConnect = await dbContext.Database.CanConnectAsync(cancellationToken);
 
