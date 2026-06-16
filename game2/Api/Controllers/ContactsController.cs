@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using TestCrudApplication.Application.Dtos.Contacts.Responses;
 using TestCrudApplication.Application.Interfaces;
+using TestCrudApplication.Shared.Dtos;
 
 namespace TestCrudApplication.Api.Controllers;
 
@@ -31,13 +32,19 @@ public class ContactsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateContact(CreateContactRequest request)
     {
-        return Ok(await _contactService.CreateAsync(request));
+        var contact = await _contactService.CreateAsync(request);
+        
+        var response = ApiResponse<ContactResponse>.Ok
+        (
+            "Contact created successfully",
+            contact
+        );
+        
+        return StatusCode(StatusCodes.Status201Created,response);
     }
 
     [HttpPut("{guid:guid}")]
-    public async Task<IActionResult> UpdateContact(
-        Guid guid,
-        UpdateContactRequest request)
+    public async Task<IActionResult> UpdateContact(Guid guid, UpdateContactRequest request)
     {
         return Ok(await _contactService.UpdateAsync(guid, request));
     }

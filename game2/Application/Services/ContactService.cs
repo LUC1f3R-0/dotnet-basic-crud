@@ -30,14 +30,18 @@ public class ContactService : IContactService
 
     public async Task<ContactResponse> CreateAsync(CreateContactRequest request)
     {
-        return new ContactResponse
+        var now = DateTime.UtcNow;
+
+        var contact = new Contact
         {
             Uuid = Guid.NewGuid(),
-            Email = request.Email,
+            Email = request.Email.Trim(),
             Age = request.Age,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            CreatedAt = now,
+            UpdatedAt = now
         };
+        var createdContact = await _contactRepository.CreateAsync(contact);
+        return MapToResponse(createdContact);
     }
 
     public async Task<bool> UpdateAsync(Guid uuid, UpdateContactRequest request)
