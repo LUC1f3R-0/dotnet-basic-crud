@@ -98,16 +98,16 @@ PROJECT DIRECTORY STRUCTURE
 ./Infrastructure/Database/AppDbContext.cs
 ./Infrastructure/Database/Configurations
 ./Infrastructure/Database/Configurations/ContactConfiguration.cs
-./Infrastructure/Database/Migrations
-./Infrastructure/Database/Migrations/20260612124830_CreateContact.cs
-./Infrastructure/Database/Migrations/20260612124830_CreateContact.Designer.cs
-./Infrastructure/Database/Migrations/AppDBContextModelSnapshot.cs
 ./Infrastructure/Email
 ./Infrastructure/Options
 ./Infrastructure/Options/DatabaseOptions.cs
 ./Infrastructure/Options/SmtpOptions.cs
 ./Infrastructure/Repositories
 ./Infrastructure/Repositories/ContactRepository.cs
+./Migrations
+./Migrations/20260615173659_AddContactTable.cs
+./Migrations/20260615173659_AddContactTable.Designer.cs
+./Migrations/AppDbContextModelSnapshot.cs
 ./Program.cs
 ./Properties
 ./Properties/launchSettings.json
@@ -169,35 +169,36 @@ FILE: ./Api/Controllers/ContactsController.cs
     18	    [HttpGet]
     19	    public async Task<IActionResult> GetAll()
     20	    {
-    21	        return Ok(await _contactService.GetAllAsync());
-    22	    }
-    23	
-    24	    [HttpGet("{guid:guid}")]
-    25	    public async Task<IActionResult> GetByUuid(Guid guid)
-    26	    {
-    27	        return Ok(await _contactService.GetByUuidAsync(guid));
-    28	    }
-    29	
-    30	    [HttpPost]
-    31	    public async Task<IActionResult> CreateContact(CreateContactRequest request)
-    32	    {
-    33	        return Ok(await _contactService.CreateAsync(request));
-    34	    }
-    35	
-    36	    [HttpPut("{guid:guid}")]
-    37	    public async Task<IActionResult> UpdateContact(
-    38	        Guid guid,
-    39	        UpdateContactRequest request)
-    40	    {
-    41	        return Ok(await _contactService.UpdateAsync(guid, request));
-    42	    }
-    43	
-    44	    [HttpDelete("{guid:guid}")]
-    45	    public async Task<IActionResult> DeleteContact(Guid guid)
-    46	    {
-    47	        return Ok(await _contactService.DeleteAsync(guid));
-    48	    }
-    49	}
+    21	        var contacts = await _contactService.GetAllAsync();
+    22	        return Ok(contacts);
+    23	    }
+    24	
+    25	    [HttpGet("{guid:guid}")]
+    26	    public async Task<IActionResult> GetByUuid(Guid guid)
+    27	    {
+    28	        return Ok(await _contactService.GetByUuidAsync(guid));
+    29	    }
+    30	
+    31	    [HttpPost]
+    32	    public async Task<IActionResult> CreateContact(CreateContactRequest request)
+    33	    {
+    34	        return Ok(await _contactService.CreateAsync(request));
+    35	    }
+    36	
+    37	    [HttpPut("{guid:guid}")]
+    38	    public async Task<IActionResult> UpdateContact(
+    39	        Guid guid,
+    40	        UpdateContactRequest request)
+    41	    {
+    42	        return Ok(await _contactService.UpdateAsync(guid, request));
+    43	    }
+    44	
+    45	    [HttpDelete("{guid:guid}")]
+    46	    public async Task<IActionResult> DeleteContact(Guid guid)
+    47	    {
+    48	        return Ok(await _contactService.DeleteAsync(guid));
+    49	    }
+    50	}
 
 
 --------------------------------------------------------------------------------
@@ -430,43 +431,68 @@ FILE: ./Application/Services/ContactService.cs
 --------------------------------------------------------------------------------
      1	using TestCrudApplication.Application.Interfaces;
      2	using TestCrudApplication.Application.Dtos.Contacts.Responses;
-     3	
-     4	namespace TestCrudApplication.Application.Services;
+     3	using TestCrudApplication.Infrastructure.Repositories;
+     4	using TestCrudApplication.Domain.Entities;
      5	
-     6	public class ContactService : IContactService
-     7	{
-     8	    public async Task<List<ContactResponse>> GetAllAsync()
-     9	    {
-    10	        return new List<ContactResponse>();
-    11	    }
-    12	
-    13	    public async Task<ContactResponse?> GetByUuidAsync(Guid uuid)
-    14	    {
-    15	        return null;
-    16	    }
-    17	
-    18	    public async Task<ContactResponse> CreateAsync(CreateContactRequest request)
-    19	    {
-    20	        return new ContactResponse
-    21	        {
-    22	            Uuid = Guid.NewGuid(),
-    23	            Email = request.Email,
-    24	            Age = request.Age,
-    25	            CreatedAt = DateTime.UtcNow,
-    26	            UpdatedAt = DateTime.UtcNow
-    27	        };
-    28	    }
-    29	
-    30	    public async Task<bool> UpdateAsync(Guid uuid, UpdateContactRequest request)
-    31	    {
-    32	        return true;
-    33	    }
-    34	
-    35	    public async Task<bool> DeleteAsync(Guid uuid)
-    36	    {
-    37	        return true;
-    38	    }
-    39	}
+     6	namespace TestCrudApplication.Application.Services;
+     7	
+     8	public class ContactService : IContactService
+     9	{
+    10	    private readonly IContactRepository _contactRepository;
+    11	
+    12	    public ContactService(IContactRepository contactRepository)
+    13	    {
+    14	        _contactRepository = contactRepository;
+    15	    }
+    16	
+    17	    public async Task<List<ContactResponse>> GetAllAsync()
+    18	    {
+    19	        var contacts = await _contactRepository.GetAllAsync();
+    20	
+    21	        return contacts
+    22	        .Select(MapToResponse)
+    23	        .ToList();
+    24	    }
+    25	
+    26	    public async Task<ContactResponse?> GetByUuidAsync(Guid uuid)
+    27	    {
+    28	        return null;
+    29	    }
+    30	
+    31	    public async Task<ContactResponse> CreateAsync(CreateContactRequest request)
+    32	    {
+    33	        return new ContactResponse
+    34	        {
+    35	            Uuid = Guid.NewGuid(),
+    36	            Email = request.Email,
+    37	            Age = request.Age,
+    38	            CreatedAt = DateTime.UtcNow,
+    39	            UpdatedAt = DateTime.UtcNow
+    40	        };
+    41	    }
+    42	
+    43	    public async Task<bool> UpdateAsync(Guid uuid, UpdateContactRequest request)
+    44	    {
+    45	        return true;
+    46	    }
+    47	
+    48	    public async Task<bool> DeleteAsync(Guid uuid)
+    49	    {
+    50	        return true;
+    51	    }
+    52	
+    53	    private static ContactResponse MapToResponse(Contact contact)
+    54	    {
+    55	        return new ContactResponse
+    56	        {
+    57	            Uuid = contact.Uuid,
+    58	            Email = contact.Email,
+    59	            Age = contact.Age,
+    60	            CreatedAt = contact.CreatedAt,
+    61	            UpdatedAt = contact.UpdatedAt
+    62	        };
+    63	    }
+    64	}
 
 
 --------------------------------------------------------------------------------
@@ -564,7 +590,102 @@ FILE: ./Infrastructure/Database/Configurations/ContactConfiguration.cs
 
 
 --------------------------------------------------------------------------------
-FILE: ./Infrastructure/Database/Migrations/20260612124830_CreateContact.cs
+FILE: ./Infrastructure/Options/DatabaseOptions.cs
+--------------------------------------------------------------------------------
+     1	namespace TestCrudApplication.Infrastructure.Options;
+     2	
+     3	public class DatabaseOptions
+     4	{
+     5	    public string Host { get; set; } = string.Empty;
+     6	
+     7	    public int Port { get; set; }
+     8	
+     9	    public string Name { get; set; } = string.Empty;
+    10	
+    11	    public string Username { get; set; } = string.Empty;
+    12	
+    13	    public string Password { get; set; } = string.Empty;
+    14	}
+
+
+--------------------------------------------------------------------------------
+FILE: ./Infrastructure/Options/SmtpOptions.cs
+--------------------------------------------------------------------------------
+     1	namespace TestCrudApplication.Infrastructure.Options;
+     2	
+     3	public class SmtpOptions
+     4	{
+     5	    public string Host { get; set; } = string.Empty;
+     6	
+     7	    public int Port { get; set; }
+     8	
+     9	    public bool UseSsl { get; set; }
+    10	
+    11	    public string Username { get; set; } = string.Empty;
+    12	
+    13	    public string Password { get; set; } = string.Empty;
+    14	}
+
+
+--------------------------------------------------------------------------------
+FILE: ./Infrastructure/Repositories/ContactRepository.cs
+--------------------------------------------------------------------------------
+     1	using TestCrudApplication.Application.Interfaces;
+     2	using TestCrudApplication.Domain.Entities;
+     3	using TestCrudApplication.Infrastructure.Database;
+     4	using Microsoft.EntityFrameworkCore;
+     5	
+     6	namespace TestCrudApplication.Infrastructure.Repositories;
+     7	
+     8	public class ContactRepository : IContactRepository
+     9	{
+    10	    private readonly AppDbContext _dbContext;
+    11	
+    12	    public ContactRepository(AppDbContext dbContext)
+    13	    {
+    14	        _dbContext = dbContext;
+    15	    }
+    16	
+    17	    public async Task<List<Contact>> GetAllAsync()
+    18	    {
+    19	        return await _dbContext.Contacts.ToListAsync();
+    20	    }
+    21	
+    22	    public async Task<Contact?> GetByUuidAsync(Guid uuid)
+    23	    {
+    24	        return await _dbContext.Contacts
+    25	        .FirstOrDefaultAsync(x => x.Uuid == uuid);
+    26	    }
+    27	
+    28	    public async Task<Contact> CreateAsync(Contact contact)
+    29	    {
+    30	        await _dbContext.Contacts.AddAsync(contact);
+    31	        await _dbContext.SaveChangesAsync();
+    32	
+    33	        return contact;
+    34	    }
+    35	
+    36	    public async Task<bool> UpdateAsync(Contact contact)
+    37	    {
+    38	        _dbContext.Contacts.Update(contact);
+    39	
+    40	        await _dbContext.SaveChangesAsync();
+    41	        return true;
+    42	    }
+    43	
+    44	    public async Task<bool> DeleteAsync(Contact contact)
+    45	    {
+    46	        _dbContext.Contacts.Remove(contact);
+    47	
+    48	        await _dbContext.SaveChangesAsync();
+    49	        return true;
+    50	    }
+    51	    
+    52	}
+
+
+--------------------------------------------------------------------------------
+FILE: ./Migrations/20260615173659_AddContactTable.cs
 --------------------------------------------------------------------------------
      1	﻿using System;
      2	using Microsoft.EntityFrameworkCore.Migrations;
@@ -575,7 +696,7 @@ FILE: ./Infrastructure/Database/Migrations/20260612124830_CreateContact.cs
      7	namespace game2.Migrations
      8	{
      9	    /// <inheritdoc />
-    10	    public partial class CreateContact : Migration
+    10	    public partial class AddContactTable : Migration
     11	    {
     12	        /// <inheritdoc />
     13	        protected override void Up(MigrationBuilder migrationBuilder)
@@ -624,7 +745,7 @@ FILE: ./Infrastructure/Database/Migrations/20260612124830_CreateContact.cs
 
 
 --------------------------------------------------------------------------------
-FILE: ./Infrastructure/Database/Migrations/20260612124830_CreateContact.Designer.cs
+FILE: ./Migrations/20260615173659_AddContactTable.Designer.cs
 --------------------------------------------------------------------------------
      1	﻿// <auto-generated />
      2	using System;
@@ -640,8 +761,8 @@ FILE: ./Infrastructure/Database/Migrations/20260612124830_CreateContact.Designer
     12	namespace game2.Migrations
     13	{
     14	    [DbContext(typeof(AppDbContext))]
-    15	    [Migration("20260612124830_CreateContact")]
-    16	    partial class CreateContact
+    15	    [Migration("20260615173659_AddContactTable")]
+    16	    partial class AddContactTable
     17	    {
     18	        /// <inheritdoc />
     19	        protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -708,7 +829,7 @@ FILE: ./Infrastructure/Database/Migrations/20260612124830_CreateContact.Designer
 
 
 --------------------------------------------------------------------------------
-FILE: ./Infrastructure/Database/Migrations/AppDBContextModelSnapshot.cs
+FILE: ./Migrations/AppDbContextModelSnapshot.cs
 --------------------------------------------------------------------------------
      1	﻿// <auto-generated />
      2	using System;
@@ -789,98 +910,6 @@ FILE: ./Infrastructure/Database/Migrations/AppDBContextModelSnapshot.cs
 
 
 --------------------------------------------------------------------------------
-FILE: ./Infrastructure/Options/DatabaseOptions.cs
---------------------------------------------------------------------------------
-     1	namespace TestCrudApplication.Infrastructure.Options;
-     2	
-     3	public class DatabaseOptions
-     4	{
-     5	    public string Host { get; set; } = string.Empty;
-     6	
-     7	    public int Port { get; set; }
-     8	
-     9	    public string Name { get; set; } = string.Empty;
-    10	
-    11	    public string Username { get; set; } = string.Empty;
-    12	
-    13	    public string Password { get; set; } = string.Empty;
-    14	}
-
-
---------------------------------------------------------------------------------
-FILE: ./Infrastructure/Options/SmtpOptions.cs
---------------------------------------------------------------------------------
-     1	namespace TestCrudApplication.Infrastructure.Options;
-     2	
-     3	public class SmtpOptions
-     4	{
-     5	    public string Host { get; set; } = string.Empty;
-     6	
-     7	    public int Port { get; set; }
-     8	
-     9	    public bool UseSsl { get; set; }
-    10	
-    11	    public string Username { get; set; } = string.Empty;
-    12	
-    13	    public string Password { get; set; } = string.Empty;
-    14	}
-
-
---------------------------------------------------------------------------------
-FILE: ./Infrastructure/Repositories/ContactRepository.cs
---------------------------------------------------------------------------------
-     1	using TestCrudApplication.Application.Interfaces;
-     2	
-     3	namespace TestCrudApplication.Infrastructure.Repositories;
-     4	
-     5	public class ContactRepository : IContactRepository
-     6	{
-     7	    private readonly AppDbContext _dbContext;
-     8	
-     9	    public ContactRepository(AppDbContext dbContext)
-    10	    {
-    11	        _dbContext = dbContext;
-    12	    }
-    13	
-    14	    public async Task<List<Contact>> GetAllAsync()
-    15	    {
-    16	        return await _dbContext.Contacts.ToListAsync();
-    17	    }
-    18	
-    19	    public async Task<Contact?> GetByUuidAsync(Guid uuid)
-    20	    {
-    21	        return await _dbContext.Contacts
-    22	        .FirstOrDefaultAsync(x => x.Uuid == uuid);
-    23	    }
-    24	
-    25	    public async Task<Contact> CreateAsync(Contact contact)
-    26	    {
-    27	        await _dbContext.Contacts.AddAsync(contact);
-    28	        await _dbContext.SaveChangesAsync();
-    29	
-    30	        return contact;
-    31	    }
-    32	
-    33	    public async Task<bool> UpdateAsync(Contact contact)
-    34	    {
-    35	        _dbContext.Contacts.Update(contact);
-    36	
-    37	        await _dbContext.SaveChangesAsync();
-    38	        return true;
-    39	    }
-    40	
-    41	    public async Task<bool> DeleteAsync(Contact contact)
-    42	    {
-    43	        _dbContext.Contacts.Remove(contact);
-    44	
-    45	        await _dbContext.SaveChangesAsync();
-    46	        return true;
-    47	    }
-    48	    
-    49	}
-
-
---------------------------------------------------------------------------------
 FILE: ./Program.cs
 --------------------------------------------------------------------------------
      1	using TestCrudApplication.Api.HostedServices;
@@ -891,47 +920,48 @@ FILE: ./Program.cs
      6	using TestCrudApplication.Application.Services;
      7	using TestCrudApplication.Application.Interfaces;
      8	using Microsoft.EntityFrameworkCore;
-     9	
-    10	var builder = WebApplication.CreateBuilder(args);
-    11	
-    12	builder.Services.AddControllers();
-    13	
-    14	builder.Services.AddScoped<IContactService, ContactService>();
-    15	builder.Services.AddScoped<IContactRepository, ContactRepository>();
-    16	
-    17	builder.Services.Configure<SmtpOptions>(
-    18	    builder.Configuration.GetSection("SMTP")
-    19	);
-    20	
-    21	builder.Services.Configure<DatabaseOptions>(
-    22	    builder.Configuration.GetSection("Database")
-    23	);
-    24	
-    25	builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
-    26	{
-    27	    var databaseOptions = serviceProvider
-    28	        .GetRequiredService<IOptions<DatabaseOptions>>()
-    29	        .Value;
-    30	
-    31	    var connectionStringBuilder = new NpgsqlConnectionStringBuilder
-    32	    {
-    33	        Host = databaseOptions.Host,
-    34	        Port = databaseOptions.Port,
-    35	        Database = databaseOptions.Name,
-    36	        Username = databaseOptions.Username,
-    37	        Password = databaseOptions.Password
-    38	    };
-    39	
-    40	    options.UseNpgsql(connectionStringBuilder.ConnectionString);
-    41	});
-    42	
-    43	builder.Services.AddHostedService<StartupConnectionCheckService>();
-    44	
-    45	var app = builder.Build();
-    46	
-    47	app.MapControllers();
-    48	
-    49	app.Run();
+     9	using TestCrudApplication.Infrastructure.Repositories;
+    10	
+    11	var builder = WebApplication.CreateBuilder(args);
+    12	
+    13	builder.Services.AddControllers();
+    14	
+    15	builder.Services.AddScoped<IContactService, ContactService>();
+    16	builder.Services.AddScoped<IContactRepository, ContactRepository>();
+    17	
+    18	builder.Services.Configure<SmtpOptions>(
+    19	    builder.Configuration.GetSection("SMTP")
+    20	);
+    21	
+    22	builder.Services.Configure<DatabaseOptions>(
+    23	    builder.Configuration.GetSection("Database")
+    24	);
+    25	
+    26	builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
+    27	{
+    28	    var databaseOptions = serviceProvider
+    29	        .GetRequiredService<IOptions<DatabaseOptions>>()
+    30	        .Value;
+    31	
+    32	    var connectionStringBuilder = new NpgsqlConnectionStringBuilder
+    33	    {
+    34	        Host = databaseOptions.Host,
+    35	        Port = databaseOptions.Port,
+    36	        Database = databaseOptions.Name,
+    37	        Username = databaseOptions.Username,
+    38	        Password = databaseOptions.Password
+    39	    };
+    40	
+    41	    options.UseNpgsql(connectionStringBuilder.ConnectionString);
+    42	});
+    43	
+    44	builder.Services.AddHostedService<StartupConnectionCheckService>();
+    45	
+    46	var app = builder.Build();
+    47	
+    48	app.MapControllers();
+    49	
+    50	app.Run();
 
 
 ================================================================================
@@ -946,18 +976,18 @@ CONFIGURATION FILE NAMES
 NAMESPACE DECLARATIONS
 ================================================================================
 
-./Application/Services/ContactService.cs:4:namespace TestCrudApplication.Application.Services;
+./Application/Services/ContactService.cs:6:namespace TestCrudApplication.Application.Services;
 ./Application/Interfaces/Services/IContactService.cs:3:namespace TestCrudApplication.Application.Interfaces;
 ./Application/Interfaces/Repositories/IContactRepository.cs:3:namespace TestCrudApplication.Application.Interfaces;
 ./Application/Dtos/Contacts/Request/UpdateContactRequest.cs:3:namespace TestCrudApplication.Application.Dtos.Contacts.Responses;
 ./Application/Dtos/Contacts/Request/CreateContactRequest.cs:3:namespace TestCrudApplication.Application.Dtos.Contacts.Responses;
 ./Application/Dtos/Contacts/Response/ContactResponse.cs:1:namespace TestCrudApplication.Application.Dtos.Contacts.Responses;
 ./Application/Dtos/Common/ApiResponse.cs:1:namespace TestCrudApplication.Shared.Dtos;
-./Infrastructure/Repositories/ContactRepository.cs:3:namespace TestCrudApplication.Infrastructure.Repositories;
+./Migrations/AppDbContextModelSnapshot.cs:11:namespace game2.Migrations
+./Migrations/20260615173659_AddContactTable.Designer.cs:12:namespace game2.Migrations
+./Migrations/20260615173659_AddContactTable.cs:7:namespace game2.Migrations
+./Infrastructure/Repositories/ContactRepository.cs:6:namespace TestCrudApplication.Infrastructure.Repositories;
 ./Infrastructure/Database/Configurations/ContactConfiguration.cs:5:namespace TestCrudApplication.Infrastructure.Database.Configurations;
-./Infrastructure/Database/Migrations/20260612124830_CreateContact.cs:7:namespace game2.Migrations
-./Infrastructure/Database/Migrations/AppDBContextModelSnapshot.cs:11:namespace game2.Migrations
-./Infrastructure/Database/Migrations/20260612124830_CreateContact.Designer.cs:12:namespace game2.Migrations
 ./Infrastructure/Database/AppDbContext.cs:4:namespace TestCrudApplication.Infrastructure.Database;
 ./Infrastructure/Options/SmtpOptions.cs:1:namespace TestCrudApplication.Infrastructure.Options;
 ./Infrastructure/Options/DatabaseOptions.cs:1:namespace TestCrudApplication.Infrastructure.Options;
@@ -971,29 +1001,34 @@ USING DIRECTIVES
 
 ./Application/Services/ContactService.cs:1:using TestCrudApplication.Application.Interfaces;
 ./Application/Services/ContactService.cs:2:using TestCrudApplication.Application.Dtos.Contacts.Responses;
+./Application/Services/ContactService.cs:3:using TestCrudApplication.Infrastructure.Repositories;
+./Application/Services/ContactService.cs:4:using TestCrudApplication.Domain.Entities;
 ./Application/Interfaces/Services/IContactService.cs:1:using TestCrudApplication.Application.Dtos.Contacts.Responses;
 ./Application/Interfaces/Repositories/IContactRepository.cs:1:using TestCrudApplication.Domain.Entities;
 ./Application/Dtos/Contacts/Request/UpdateContactRequest.cs:1:using System.ComponentModel.DataAnnotations;
 ./Application/Dtos/Contacts/Request/CreateContactRequest.cs:1:using System.ComponentModel.DataAnnotations;
+./Migrations/AppDbContextModelSnapshot.cs:2:using System;
+./Migrations/AppDbContextModelSnapshot.cs:3:using Microsoft.EntityFrameworkCore;
+./Migrations/AppDbContextModelSnapshot.cs:4:using Microsoft.EntityFrameworkCore.Infrastructure;
+./Migrations/AppDbContextModelSnapshot.cs:5:using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+./Migrations/AppDbContextModelSnapshot.cs:6:using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
+./Migrations/AppDbContextModelSnapshot.cs:7:using TestCrudApplication.Infrastructure.Database;
+./Migrations/20260615173659_AddContactTable.Designer.cs:2:using System;
+./Migrations/20260615173659_AddContactTable.Designer.cs:3:using Microsoft.EntityFrameworkCore;
+./Migrations/20260615173659_AddContactTable.Designer.cs:4:using Microsoft.EntityFrameworkCore.Infrastructure;
+./Migrations/20260615173659_AddContactTable.Designer.cs:5:using Microsoft.EntityFrameworkCore.Migrations;
+./Migrations/20260615173659_AddContactTable.Designer.cs:6:using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+./Migrations/20260615173659_AddContactTable.Designer.cs:7:using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
+./Migrations/20260615173659_AddContactTable.Designer.cs:8:using TestCrudApplication.Infrastructure.Database;
+./Migrations/20260615173659_AddContactTable.cs:2:using Microsoft.EntityFrameworkCore.Migrations;
+./Migrations/20260615173659_AddContactTable.cs:3:using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 ./Infrastructure/Repositories/ContactRepository.cs:1:using TestCrudApplication.Application.Interfaces;
+./Infrastructure/Repositories/ContactRepository.cs:2:using TestCrudApplication.Domain.Entities;
+./Infrastructure/Repositories/ContactRepository.cs:3:using TestCrudApplication.Infrastructure.Database;
+./Infrastructure/Repositories/ContactRepository.cs:4:using Microsoft.EntityFrameworkCore;
 ./Infrastructure/Database/Configurations/ContactConfiguration.cs:1:using TestCrudApplication.Domain.Entities;
 ./Infrastructure/Database/Configurations/ContactConfiguration.cs:2:using Microsoft.EntityFrameworkCore;
 ./Infrastructure/Database/Configurations/ContactConfiguration.cs:3:using Microsoft.EntityFrameworkCore.Metadata.Builders;
-./Infrastructure/Database/Migrations/20260612124830_CreateContact.cs:2:using Microsoft.EntityFrameworkCore.Migrations;
-./Infrastructure/Database/Migrations/20260612124830_CreateContact.cs:3:using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-./Infrastructure/Database/Migrations/AppDBContextModelSnapshot.cs:2:using System;
-./Infrastructure/Database/Migrations/AppDBContextModelSnapshot.cs:3:using Microsoft.EntityFrameworkCore;
-./Infrastructure/Database/Migrations/AppDBContextModelSnapshot.cs:4:using Microsoft.EntityFrameworkCore.Infrastructure;
-./Infrastructure/Database/Migrations/AppDBContextModelSnapshot.cs:5:using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-./Infrastructure/Database/Migrations/AppDBContextModelSnapshot.cs:6:using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-./Infrastructure/Database/Migrations/AppDBContextModelSnapshot.cs:7:using TestCrudApplication.Infrastructure.Database;
-./Infrastructure/Database/Migrations/20260612124830_CreateContact.Designer.cs:2:using System;
-./Infrastructure/Database/Migrations/20260612124830_CreateContact.Designer.cs:3:using Microsoft.EntityFrameworkCore;
-./Infrastructure/Database/Migrations/20260612124830_CreateContact.Designer.cs:4:using Microsoft.EntityFrameworkCore.Infrastructure;
-./Infrastructure/Database/Migrations/20260612124830_CreateContact.Designer.cs:5:using Microsoft.EntityFrameworkCore.Migrations;
-./Infrastructure/Database/Migrations/20260612124830_CreateContact.Designer.cs:6:using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-./Infrastructure/Database/Migrations/20260612124830_CreateContact.Designer.cs:7:using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-./Infrastructure/Database/Migrations/20260612124830_CreateContact.Designer.cs:8:using TestCrudApplication.Infrastructure.Database;
 ./Infrastructure/Database/AppDbContext.cs:1:using TestCrudApplication.Domain.Entities;
 ./Infrastructure/Database/AppDbContext.cs:2:using Microsoft.EntityFrameworkCore;
 ./Api/HostedServices/StartUpCheckService.cs:1:using TestCrudApplication.Infrastructure.Options;
@@ -1014,77 +1049,55 @@ USING DIRECTIVES
 ./Program.cs:6:using TestCrudApplication.Application.Services;
 ./Program.cs:7:using TestCrudApplication.Application.Interfaces;
 ./Program.cs:8:using Microsoft.EntityFrameworkCore;
+./Program.cs:9:using TestCrudApplication.Infrastructure.Repositories;
 
 ================================================================================
 CONTACT AND DBCONTEXT REFERENCES
 ================================================================================
 
+./Application/Services/ContactService.cs:10:    private readonly IContactRepository _contactRepository;
+./Application/Services/ContactService.cs:12:    public ContactService(IContactRepository contactRepository)
+./Application/Services/ContactService.cs:53:    private static ContactResponse MapToResponse(Contact contact)
 ./Application/Interfaces/Repositories/IContactRepository.cs:5:public interface IContactRepository
 ./Application/Interfaces/Repositories/IContactRepository.cs:7:    Task<List<Contact>> GetAllAsync();
 ./Application/Interfaces/Repositories/IContactRepository.cs:9:    Task<Contact?> GetByUuidAsync(Guid uuid);
 ./Application/Interfaces/Repositories/IContactRepository.cs:11:    Task<Contact> CreateAsync(Contact contact);
 ./Application/Interfaces/Repositories/IContactRepository.cs:13:    Task<bool> UpdateAsync(Contact contact);
 ./Application/Interfaces/Repositories/IContactRepository.cs:15:    Task<bool> DeleteAsync(Contact contact);
-./Infrastructure/Repositories/ContactRepository.cs:5:public class ContactRepository : IContactRepository
-./Infrastructure/Repositories/ContactRepository.cs:7:    private readonly AppDbContext _dbContext;
-./Infrastructure/Repositories/ContactRepository.cs:9:    public ContactRepository(AppDbContext dbContext)
-./Infrastructure/Repositories/ContactRepository.cs:14:    public async Task<List<Contact>> GetAllAsync()
-./Infrastructure/Repositories/ContactRepository.cs:19:    public async Task<Contact?> GetByUuidAsync(Guid uuid)
-./Infrastructure/Repositories/ContactRepository.cs:25:    public async Task<Contact> CreateAsync(Contact contact)
-./Infrastructure/Repositories/ContactRepository.cs:33:    public async Task<bool> UpdateAsync(Contact contact)
-./Infrastructure/Repositories/ContactRepository.cs:41:    public async Task<bool> DeleteAsync(Contact contact)
+./Migrations/AppDbContextModelSnapshot.cs:13:    [DbContext(typeof(AppDbContext))]
+./Migrations/AppDbContextModelSnapshot.cs:26:            modelBuilder.Entity("TestCrudApplication.Domain.Entities.Contact", b =>
+./Migrations/20260615173659_AddContactTable.Designer.cs:14:    [DbContext(typeof(AppDbContext))]
+./Migrations/20260615173659_AddContactTable.Designer.cs:29:            modelBuilder.Entity("TestCrudApplication.Domain.Entities.Contact", b =>
+./Infrastructure/Repositories/ContactRepository.cs:8:public class ContactRepository : IContactRepository
+./Infrastructure/Repositories/ContactRepository.cs:10:    private readonly AppDbContext _dbContext;
+./Infrastructure/Repositories/ContactRepository.cs:12:    public ContactRepository(AppDbContext dbContext)
+./Infrastructure/Repositories/ContactRepository.cs:17:    public async Task<List<Contact>> GetAllAsync()
+./Infrastructure/Repositories/ContactRepository.cs:22:    public async Task<Contact?> GetByUuidAsync(Guid uuid)
+./Infrastructure/Repositories/ContactRepository.cs:28:    public async Task<Contact> CreateAsync(Contact contact)
+./Infrastructure/Repositories/ContactRepository.cs:36:    public async Task<bool> UpdateAsync(Contact contact)
+./Infrastructure/Repositories/ContactRepository.cs:44:    public async Task<bool> DeleteAsync(Contact contact)
 ./Infrastructure/Database/Configurations/ContactConfiguration.cs:7:public class ContactConfiguration : IEntityTypeConfiguration<Contact>
 ./Infrastructure/Database/Configurations/ContactConfiguration.cs:9:    public void Configure(EntityTypeBuilder<Contact> contact)
-./Infrastructure/Database/Migrations/AppDBContextModelSnapshot.cs:13:    [DbContext(typeof(AppDbContext))]
-./Infrastructure/Database/Migrations/AppDBContextModelSnapshot.cs:26:            modelBuilder.Entity("TestCrudApplication.Domain.Entities.Contact", b =>
-./Infrastructure/Database/Migrations/20260612124830_CreateContact.Designer.cs:14:    [DbContext(typeof(AppDbContext))]
-./Infrastructure/Database/Migrations/20260612124830_CreateContact.Designer.cs:29:            modelBuilder.Entity("TestCrudApplication.Domain.Entities.Contact", b =>
 ./Infrastructure/Database/AppDbContext.cs:6:public class AppDbContext : DbContext
 ./Infrastructure/Database/AppDbContext.cs:8:    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 ./Infrastructure/Database/AppDbContext.cs:10:    public DbSet<Contact> Contacts => Set<Contact>();
 ./Infrastructure/Database/AppDbContext.cs:15:        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
 ./Api/HostedServices/StartUpCheckService.cs:39:            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 ./Domain/Entities/Contact.cs:3:public class Contact
-./Program.cs:15:builder.Services.AddScoped<IContactRepository, ContactRepository>();
-./Program.cs:25:builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
+./Program.cs:16:builder.Services.AddScoped<IContactRepository, ContactRepository>();
+./Program.cs:26:builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
 
 ================================================================================
 DOTNET BUILD OUTPUT
 ================================================================================
 
-/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/Infrastructure/Repositories/ContactRepository.cs(14,28): error CS0246: The type or namespace name 'Contact' could not be found (are you missing a using directive or an assembly reference?) [/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/game2.csproj]
-/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/Infrastructure/Repositories/ContactRepository.cs(19,23): error CS0246: The type or namespace name 'Contact' could not be found (are you missing a using directive or an assembly reference?) [/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/game2.csproj]
-/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/Infrastructure/Repositories/ContactRepository.cs(25,44): error CS0246: The type or namespace name 'Contact' could not be found (are you missing a using directive or an assembly reference?) [/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/game2.csproj]
-/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/Infrastructure/Repositories/ContactRepository.cs(25,23): error CS0246: The type or namespace name 'Contact' could not be found (are you missing a using directive or an assembly reference?) [/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/game2.csproj]
-/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/Infrastructure/Repositories/ContactRepository.cs(33,41): error CS0246: The type or namespace name 'Contact' could not be found (are you missing a using directive or an assembly reference?) [/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/game2.csproj]
-/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/Infrastructure/Repositories/ContactRepository.cs(41,41): error CS0246: The type or namespace name 'Contact' could not be found (are you missing a using directive or an assembly reference?) [/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/game2.csproj]
-/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/Infrastructure/Repositories/ContactRepository.cs(5,34): error CS0738: 'ContactRepository' does not implement interface member 'IContactRepository.GetAllAsync()'. 'ContactRepository.GetAllAsync()' cannot implement 'IContactRepository.GetAllAsync()' because it does not have the matching return type of 'Task<List<Contact>>'. [/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/game2.csproj]
-/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/Infrastructure/Repositories/ContactRepository.cs(5,34): error CS0738: 'ContactRepository' does not implement interface member 'IContactRepository.GetByUuidAsync(Guid)'. 'ContactRepository.GetByUuidAsync(Guid)' cannot implement 'IContactRepository.GetByUuidAsync(Guid)' because it does not have the matching return type of 'Task<Contact?>'. [/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/game2.csproj]
-/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/Infrastructure/Repositories/ContactRepository.cs(5,34): error CS0535: 'ContactRepository' does not implement interface member 'IContactRepository.CreateAsync(Contact)' [/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/game2.csproj]
-/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/Infrastructure/Repositories/ContactRepository.cs(5,34): error CS0535: 'ContactRepository' does not implement interface member 'IContactRepository.UpdateAsync(Contact)' [/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/game2.csproj]
-/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/Infrastructure/Repositories/ContactRepository.cs(5,34): error CS0535: 'ContactRepository' does not implement interface member 'IContactRepository.DeleteAsync(Contact)' [/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/game2.csproj]
-/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/Infrastructure/Repositories/ContactRepository.cs(7,22): error CS0246: The type or namespace name 'AppDbContext' could not be found (are you missing a using directive or an assembly reference?) [/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/game2.csproj]
-/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/Infrastructure/Repositories/ContactRepository.cs(9,30): error CS0246: The type or namespace name 'AppDbContext' could not be found (are you missing a using directive or an assembly reference?) [/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/game2.csproj]
+  game2 -> /media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/bin/Debug/net10.0/game2.dll
 
-Build FAILED.
-
-/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/Infrastructure/Repositories/ContactRepository.cs(14,28): error CS0246: The type or namespace name 'Contact' could not be found (are you missing a using directive or an assembly reference?) [/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/game2.csproj]
-/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/Infrastructure/Repositories/ContactRepository.cs(19,23): error CS0246: The type or namespace name 'Contact' could not be found (are you missing a using directive or an assembly reference?) [/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/game2.csproj]
-/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/Infrastructure/Repositories/ContactRepository.cs(25,44): error CS0246: The type or namespace name 'Contact' could not be found (are you missing a using directive or an assembly reference?) [/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/game2.csproj]
-/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/Infrastructure/Repositories/ContactRepository.cs(25,23): error CS0246: The type or namespace name 'Contact' could not be found (are you missing a using directive or an assembly reference?) [/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/game2.csproj]
-/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/Infrastructure/Repositories/ContactRepository.cs(33,41): error CS0246: The type or namespace name 'Contact' could not be found (are you missing a using directive or an assembly reference?) [/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/game2.csproj]
-/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/Infrastructure/Repositories/ContactRepository.cs(41,41): error CS0246: The type or namespace name 'Contact' could not be found (are you missing a using directive or an assembly reference?) [/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/game2.csproj]
-/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/Infrastructure/Repositories/ContactRepository.cs(5,34): error CS0738: 'ContactRepository' does not implement interface member 'IContactRepository.GetAllAsync()'. 'ContactRepository.GetAllAsync()' cannot implement 'IContactRepository.GetAllAsync()' because it does not have the matching return type of 'Task<List<Contact>>'. [/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/game2.csproj]
-/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/Infrastructure/Repositories/ContactRepository.cs(5,34): error CS0738: 'ContactRepository' does not implement interface member 'IContactRepository.GetByUuidAsync(Guid)'. 'ContactRepository.GetByUuidAsync(Guid)' cannot implement 'IContactRepository.GetByUuidAsync(Guid)' because it does not have the matching return type of 'Task<Contact?>'. [/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/game2.csproj]
-/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/Infrastructure/Repositories/ContactRepository.cs(5,34): error CS0535: 'ContactRepository' does not implement interface member 'IContactRepository.CreateAsync(Contact)' [/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/game2.csproj]
-/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/Infrastructure/Repositories/ContactRepository.cs(5,34): error CS0535: 'ContactRepository' does not implement interface member 'IContactRepository.UpdateAsync(Contact)' [/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/game2.csproj]
-/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/Infrastructure/Repositories/ContactRepository.cs(5,34): error CS0535: 'ContactRepository' does not implement interface member 'IContactRepository.DeleteAsync(Contact)' [/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/game2.csproj]
-/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/Infrastructure/Repositories/ContactRepository.cs(7,22): error CS0246: The type or namespace name 'AppDbContext' could not be found (are you missing a using directive or an assembly reference?) [/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/game2.csproj]
-/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/Infrastructure/Repositories/ContactRepository.cs(9,30): error CS0246: The type or namespace name 'AppDbContext' could not be found (are you missing a using directive or an assembly reference?) [/media/luc1f3r/drkdv_6661/my-experiments/dontnet/game2/game2.csproj]
+Build succeeded.
     0 Warning(s)
-    13 Error(s)
+    0 Error(s)
 
-Time Elapsed 00:00:00.97
+Time Elapsed 00:00:07.57
 
 ================================================================================
 END OF PROJECT SNAPSHOT
