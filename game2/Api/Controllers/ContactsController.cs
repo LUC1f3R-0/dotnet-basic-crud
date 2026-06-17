@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Org.BouncyCastle.Asn1.X509;
 using TestCrudApplication.Application.Dtos.Contacts.Responses;
 using TestCrudApplication.Application.Interfaces;
 using TestCrudApplication.Shared.Dtos;
@@ -37,6 +38,17 @@ public class ContactsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateContact(CreateContactRequest request)
     {
+        var isEamilExist = await _contactService.ExistsByEmailAsync(request.Email);
+
+        if(isEamilExist)
+        {
+            var emailConflict = ApiResponse<ContactResponse>.Fail
+            (
+                "A contact with this email already exists"
+            );
+            return Conflict(emailConflict);
+        }
+
         var contact = await _contactService.CreateAsync(request);
         var response = ApiResponse<ContactResponse>.Ok
         (

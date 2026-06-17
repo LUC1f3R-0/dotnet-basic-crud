@@ -39,6 +39,11 @@ public class ContactRepository : IContactRepository
         return true;
     }
 
+    public async Task<bool> ExistsByEmailAsync(string email)
+    {
+        return await _dbContext.Contacts.AnyAsync(contact => contact.Email == email);
+    }
+
     public async Task<bool> DeleteAsync(Contact contact)
     {
         _dbContext.Contacts.Remove(contact);

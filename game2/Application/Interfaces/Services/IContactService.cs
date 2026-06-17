@@ -12,5 +12,7 @@ public interface IContactService
 
     Task<ContactResponse?> UpdateByUuidAsync(Guid uuid, UpdateContactRequest request);
 
+    Task<bool> ExistsByEmailAsync(string email);
+
     Task<bool> DeleteAsync(Guid uuid);
 }

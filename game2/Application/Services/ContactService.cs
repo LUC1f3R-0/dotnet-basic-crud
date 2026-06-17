@@ -70,6 +70,12 @@ public class ContactService : IContactService
         return true;
     }
 
+    public async Task<bool> ExistsByEmailAsync(string email)
+    {
+        var normalizeEmail = email.Trim().ToLowerInvariant();
+        return await _contactRepository.ExistsByEmailAsync(normalizeEmail);
+    }
+
     private static ContactResponse MapToResponse(Contact contact)
     {
         return new ContactResponse
@@ -80,5 +86,5 @@ public class ContactService : IContactService
             CreatedAt = contact.CreatedAt,
             UpdatedAt = contact.UpdatedAt
         };
-    }
+    }    
 }
