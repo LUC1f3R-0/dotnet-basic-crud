@@ -10,7 +10,7 @@ public interface IContactService
 
     Task<ContactResponse> CreateAsync(CreateContactRequest request);
 
-    Task<bool> UpdateAsync(Guid uuid, UpdateContactRequest request);
+    Task<ContactResponse?> UpdateByUuidAsync(Guid uuid, UpdateContactRequest request);
 
     Task<bool> DeleteAsync(Guid uuid);
 }

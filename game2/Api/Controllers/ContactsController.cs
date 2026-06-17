@@ -20,7 +20,12 @@ public class ContactsController : ControllerBase
     public async Task<IActionResult> GetAll()
     {
         var contacts = await _contactService.GetAllAsync();
-        return Ok(contacts);
+        var response = ApiResponse<List<ContactResponse>>.Ok
+        (
+            "Contact revceived successfully",
+            contacts
+        );
+        return StatusCode(StatusCodes.Status201Created, response);
     }
 
     [HttpGet("{guid:guid}")]
@@ -33,20 +38,34 @@ public class ContactsController : ControllerBase
     public async Task<IActionResult> CreateContact(CreateContactRequest request)
     {
         var contact = await _contactService.CreateAsync(request);
-        
         var response = ApiResponse<ContactResponse>.Ok
         (
             "Contact created successfully",
             contact
         );
-        
         return StatusCode(StatusCodes.Status201Created,response);
     }
 
     [HttpPut("{guid:guid}")]
-    public async Task<IActionResult> UpdateContact(Guid guid, UpdateContactRequest request)
+    public async Task<IActionResult> UpdateByUuidAsync(Guid guid, UpdateContactRequest request)
     {
-        return Ok(await _contactService.UpdateAsync(guid, request));
+        var contact = await _contactService.UpdateByUuidAsync(guid, request);
+
+        if (contact is null)
+        {
+            var notFoundResponse = ApiResponse<ContactResponse>.Fail
+            (
+                "Contact not found"
+            );
+            return NotFound(notFoundResponse);
+        }
+        
+        var response = ApiResponse<ContactResponse>.Ok
+        (
+            "Contact updated successfully",
+            contact
+        );
+        return StatusCode(StatusCodes.Status201Created,response);
     }
 
     [HttpDelete("{guid:guid}")]

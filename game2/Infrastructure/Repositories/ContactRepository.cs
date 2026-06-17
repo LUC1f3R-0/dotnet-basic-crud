@@ -35,8 +35,6 @@ public class ContactRepository : IContactRepository
 
     public async Task<bool> UpdateAsync(Contact contact)
     {
-        _dbContext.Contacts.Update(contact);
-
         await _dbContext.SaveChangesAsync();
         return true;
     }

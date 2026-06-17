@@ -44,9 +44,25 @@ public class ContactService : IContactService
         return MapToResponse(createdContact);
     }
 
-    public async Task<bool> UpdateAsync(Guid uuid, UpdateContactRequest request)
+    public async Task<ContactResponse?> UpdateByUuidAsync(Guid uuid, UpdateContactRequest request)
     {
-        return true;
+        var contact = await _contactRepository.GetByUuidAsync(uuid);
+        if (contact is null)
+        {
+            return null;
+        }
+
+        contact.Age = request.Age;
+        contact.UpdatedAt = DateTime.UtcNow;
+
+        var isUpdated = await _contactRepository.UpdateAsync(contact);
+
+        if (!isUpdated)
+        {
+            return null;
+        }
+
+        return MapToResponse(contact);
     }
 
     public async Task<bool> DeleteAsync(Guid uuid)
