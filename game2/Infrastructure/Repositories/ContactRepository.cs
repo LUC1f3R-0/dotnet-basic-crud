@@ -41,15 +41,19 @@ public class ContactRepository : IContactRepository
 
     public async Task<bool> ExistsByEmailAsync(string email)
     {
-        return await _dbContext.Contacts.AnyAsync(contact => contact.Email == email);
+        return await _dbContext.Contacts.AnyAsync(x => x.Email == email);
     }
 
-    public async Task<bool> DeleteAsync(Contact contact)
+    public async Task<bool> SearchByUuidAsync(Guid guid)
+    {
+        return await _dbContext.Contacts.AnyAsync(x => x.Uuid == guid);
+    }
+    
+    public async Task<Contact> DeleteByUuidAsync(Contact contact)
     {
         _dbContext.Contacts.Remove(contact);
-
         await _dbContext.SaveChangesAsync();
-        return true;
+        return contact;
     }
     
 }

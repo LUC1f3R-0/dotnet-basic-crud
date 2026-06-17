@@ -1,6 +1,5 @@
 using TestCrudApplication.Application.Interfaces;
 using TestCrudApplication.Application.Dtos.Contacts.Responses;
-using TestCrudApplication.Infrastructure.Repositories;
 using TestCrudApplication.Domain.Entities;
 
 namespace TestCrudApplication.Application.Services;
@@ -25,17 +24,28 @@ public class ContactService : IContactService
 
     public async Task<ContactResponse?> GetByUuidAsync(Guid uuid)
     {
-        return null;
+        var existContact = await _contactRepository.GetByUuidAsync(uuid);
+        if (existContact is null)
+        {
+            return null;
+        }
+        return MapToResponse(existContact);
     }
 
     public async Task<ContactResponse> CreateAsync(CreateContactRequest request)
     {
+        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+        
+        var emailExists = await _contactRepository.ExistsByEmailAsync(normalizedEmail);
+        if (emailExists)
+        {
+            throw new InvalidOperationException("A contact with this email already exists.");
+        }
         var now = DateTime.UtcNow;
-
         var contact = new Contact
         {
             Uuid = Guid.NewGuid(),
-            Email = request.Email.Trim(),
+            Email = normalizedEmail,
             Age = request.Age,
             CreatedAt = now,
             UpdatedAt = now
@@ -51,31 +61,24 @@ public class ContactService : IContactService
         {
             return null;
         }
-
         contact.Age = request.Age;
         contact.UpdatedAt = DateTime.UtcNow;
-
-        var isUpdated = await _contactRepository.UpdateAsync(contact);
-
-        if (!isUpdated)
-        {
-            return null;
-        }
-
+        
+        await _contactRepository.UpdateAsync(contact);
         return MapToResponse(contact);
     }
 
-    public async Task<bool> DeleteAsync(Guid uuid)
+    public async Task<ContactResponse?> DeleteByUuidAsync(Guid uuid)
     {
-        return true;
+        var existUuid = await _contactRepository.GetByUuidAsync(uuid);
+        if (existUuid is null)
+        {
+            return null;
+        }
+        var responce = await _contactRepository.DeleteByUuidAsync(existUuid);
+        return MapToResponse(responce);
     }
-
-    public async Task<bool> ExistsByEmailAsync(string email)
-    {
-        var normalizeEmail = email.Trim().ToLowerInvariant();
-        return await _contactRepository.ExistsByEmailAsync(normalizeEmail);
-    }
-
+    
     private static ContactResponse MapToResponse(Contact contact)
     {
         return new ContactResponse

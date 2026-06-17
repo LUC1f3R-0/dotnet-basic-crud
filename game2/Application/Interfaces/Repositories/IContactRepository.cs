@@ -13,7 +13,9 @@ public interface IContactRepository
 
     Task<bool> ExistsByEmailAsync(string email);
 
+    Task<bool> SearchByUuidAsync(Guid guid);
+
     Task<bool> UpdateAsync(Contact contact);
 
-    Task<bool> DeleteAsync(Contact contact);
+    Task<Contact> DeleteByUuidAsync(Contact contact);
 }
