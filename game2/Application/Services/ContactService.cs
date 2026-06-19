@@ -1,6 +1,7 @@
 using TestCrudApplication.Application.Interfaces;
 using TestCrudApplication.Application.Dtos.Contacts.Responses;
 using TestCrudApplication.Domain.Entities;
+using TestCrudApplication.Application.Common.Exceptions;
 
 namespace TestCrudApplication.Application.Services;
 
@@ -22,25 +23,17 @@ public class ContactService : IContactService
         .ToList();
     }
 
-    public async Task<ContactResponse?> GetByUuidAsync(Guid uuid)
+    public async Task<ContactResponse> GetByUuidAsync(Guid uuid)
     {
-        var existContact = await _contactRepository.GetByUuidAsync(uuid);
-        if (existContact is null)
-        {
-            return null;
-        }
-        return MapToResponse(existContact);
+        var contact = await _contactRepository.GetByUuidAsync(uuid) ?? throw new NotFoundException("Contact not found.");
+        return MapToResponse(contact);
     }
 
     public async Task<ContactResponse> CreateAsync(CreateContactRequest request)
     {
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
-        
         var emailExists = await _contactRepository.ExistsByEmailAsync(normalizedEmail);
-        if (emailExists)
-        {
-            throw new InvalidOperationException("A contact with this email already exists.");
-        }
+        if (emailExists) throw new ConflictException("A contact with this email already exists.");
         var now = DateTime.UtcNow;
         var contact = new Contact
         {
@@ -54,29 +47,20 @@ public class ContactService : IContactService
         return MapToResponse(createdContact);
     }
 
-    public async Task<ContactResponse?> UpdateByUuidAsync(Guid uuid, UpdateContactRequest request)
+    public async Task<ContactResponse> UpdateByUuidAsync(Guid uuid, UpdateContactRequest request)
     {
-        var contact = await _contactRepository.GetByUuidAsync(uuid);
-        if (contact is null)
-        {
-            return null;
-        }
+        var contact = await _contactRepository.GetByUuidAsync(uuid) ?? throw new NotFoundException("Contact not found.");
         contact.Age = request.Age;
         contact.UpdatedAt = DateTime.UtcNow;
-        
         await _contactRepository.UpdateAsync(contact);
         return MapToResponse(contact);
     }
 
-    public async Task<ContactResponse?> DeleteByUuidAsync(Guid uuid)
+    public async Task<ContactResponse> DeleteByUuidAsync(Guid uuid)
     {
-        var existUuid = await _contactRepository.GetByUuidAsync(uuid);
-        if (existUuid is null)
-        {
-            return null;
-        }
-        var responce = await _contactRepository.DeleteByUuidAsync(existUuid);
-        return MapToResponse(responce);
+        var contact = await _contactRepository.GetByUuidAsync(uuid) ?? throw new NotFoundException("Contact not found.");
+        var deletedContact = await _contactRepository.DeleteByUuidAsync(contact);
+        return MapToResponse(deletedContact);
     }
     
     private static ContactResponse MapToResponse(Contact contact)
