@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using TestCrudApplication.Infrastructure.Repositories;
 using TestCrudApplication.Api.Common.Responses;
 using Microsoft.AspNetCore.Mvc;
+using TestCrudApplication.Api.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,10 +46,9 @@ builder.Services
 
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-
-
 builder.Services.AddProblemDetails();
 
+builder.Services.AddApplicationCors(builder.Configuration);
 // -------------------------------------------------------
 // 3. APPLICATION DEPENDENCY INJECTION
 // -------------------------------------------------------
@@ -104,6 +104,7 @@ var app = builder.Build();
 
 app.UseExceptionHandler();
 
+app.UseApplicationCors();
 // -------------------------------------------------------
 // 8. MAP CONTROLLER ENDPOINTS
 // -------------------------------------------------------
